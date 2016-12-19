@@ -1,0 +1,39 @@
+# -*- mode: snippet -*-
+# name: REPL workflow
+# key: repl-workflow
+# --
+;; ===========================================================================
+;; REPL workflow
+
+(def dev-config
+  {})
+
+(def system nil)
+
+(defn init []
+  (alter-var-root
+   #'system
+   (constantly
+    (new-system dev-config))))
+
+(defn start []
+  (alter-var-root
+   #'system
+   component/start)
+  :started)
+
+(defn stop []
+  (alter-var-root
+   #'system
+   (fn [s]
+     (when s
+       (component/stop s))))
+  :stopped)
+
+(defn go []
+  (init)
+  (start))
+
+(defn reset []
+  (stop)
+  (refresh :after 'user/go))

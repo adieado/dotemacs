@@ -1,0 +1,519 @@
+#+TITLE: stask's emacs configuration
+#+STARTUP: overview
+
+* emacs-map specific
+  #+BEGIN_SRC emacs-lisp
+    (let ((default-directory "/usr/local/share/emacs/site-lisp/"))
+      (normal-top-level-add-subdirs-to-load-path))
+  #+END_SRC
+
+* fix deprecation warnings
+  #+BEGIN_SRC emacs-lisp
+    (when (>= emacs-major-version 25)
+      (eval-after-load 'bytecomp
+        '(add-to-list 'byte-compile-not-obsolete-funcs
+                      'preceding-sexp)))
+  #+END_SRC
+
+* mac specific
+  #+BEGIN_SRC emacs-lisp
+    (setq mac-option-modifier 'meta
+          mac-command-modifier 'hyper)
+  #+END_SRC
+
+* memory management
+  Allow more than 800KiB cache before starting garbage collection.
+  #+BEGIN_SRC emacs-lisp
+    (setq gc-cons-threshold 50000000)
+  #+END_SRC
+
+* interface tweaks
+  #+BEGIN_SRC emacs-lisp
+    (setq inhibit-startup-message t)
+    (tool-bar-mode -1)
+    (scroll-bar-mode -1)
+    (blink-cursor-mode -1)
+    (tooltip-mode -1)
+    (show-paren-mode t)
+    (fset 'yes-or-no-p 'y-or-n-p)
+    (global-set-key (kbd "<f5>") 'revert-buffer)
+    (set-face-attribute 'default nil :height 130)
+    (when window-system
+      (set-frame-size (selected-frame) 166 50))
+    (global-prettify-symbols-mode t)
+    (setq column-number-mode t)
+    (global-set-key (kbd "H-k")
+                    (lambda ()
+                      (interactive)
+                      (eshell/clear t)))
+  #+END_SRC
+
+* general editing
+  #+BEGIN_SRC emacs-lisp
+    (setq make-backup-files nil
+          auto-save-default nil
+          require-final-newline t
+          next-line-add-newlines nil)
+    (setq-default tab-width 2)
+    (setq-default indent-tabs-mode nil)
+    (add-hook 'before-save-hook 'delete-trailing-whitespace)
+    ;; some convenience shortcuts
+    (global-set-key [(hyper a)] 'mark-whole-buffer)
+    (global-set-key [(hyper v)] 'yank)
+    (global-set-key [(hyper c)] 'kill-ring-save)
+    (global-set-key [(hyper s)] 'save-buffer)
+    (global-set-key [(hyper l)] 'goto-line)
+    (global-set-key [(hyper w)]
+                    (lambda ()
+                      (interactive)
+                      (delete-window)))
+    (global-set-key [(hyper z)] 'undo)
+  #+END_SRC
+
+* window management
+
+** windmove
+   #+BEGIN_SRC emacs-lisp
+     (global-set-key (kbd "H-<left>") 'windmove-left)
+     (global-set-key (kbd "H-<right>") 'windmove-right)
+     (global-set-key (kbd "H-<up>") 'windmove-up)
+     (global-set-key (kbd "H-<down>") 'windmove-down)
+     (global-set-key (kbd "H-M-<left>") 'shrink-window-horizontally)
+     (global-set-key (kbd "H-M-<right>") 'enlarge-window-horizontally)
+     (global-set-key (kbd "H-M-<up>") 'shrink-window)
+     (global-set-key (kbd "H-M-<down>") 'enlarge-window)
+   #+END_SRC
+
+** ace-window
+   #+BEGIN_SRC emacs-lisp
+     (unless (package-installed-p 'ace-window)
+       (package-install 'ace-window))
+     (global-set-key [remap other-window] 'ace-window)
+   #+END_SRC
+* diminish
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'diminish)
+      (package-install 'diminish))
+
+    (defmacro diminish-minor-mode (filename mode &optional abbrev)
+      `(eval-after-load (symbol-name ,filename)
+         '(diminish ,mode ,abbrev)))
+
+    (defmacro diminish-major-mode (mode-hook abbrev)
+      `(add-hook ,mode-hook
+                 (lambda ()
+                   (setq mode-name ,abbrev))))
+  #+END_SRC
+
+* which key
+  Show help when you pause during keystroke.
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'which-key)
+      (package-install 'which-key))
+    (which-key-mode)
+    (diminish-minor-mode 'which-key 'which-key-mode)
+  #+END_SRC
+
+* org-mode
+  #+BEGIN_SRC emacs-lisp
+    (setq org-src-fontify-natively t
+          org-src-window-setup 'other-window)
+
+    (define-key global-map "\C-cr" 'org-capture)
+
+    (setq org-capture-templates
+          '(("k" "kona journal entry" entry
+             (file+datetree "~/org/journals/kona.org")
+             "* %U\n\t%?")
+            ("p" "pt journal entry" entry
+             (file+datetree "~/org/journals/pt.org")
+             "* %U\n\t%?")
+            ("l" "personal journal entry" entry
+             (file+datetree "~/org/journals/personal.org")
+             "* %U\n\t%?")
+            ("i" "idea" entry
+             (file+datetree "~/org/ideas.org")
+             "* %U\n\t%?")
+            ("t" "todo" entry
+             (file+datetree "~/org/todo.org")
+             "* %U\n\t%?")))
+  #+END_SRC
+  Org bullets
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'org-bullets)
+      (package-install 'org-bullets))
+    (add-hook 'org-mode-hook
+              (lambda ()
+                (org-bullets-mode 1)
+                (define-key org-mode-map "\M-q" 'toggle-truncate-lines)))
+  #+END_SRC
+
+* swiper / ivy / counsel
+  Swiper gives us a really efficient incremental search with regular
+  expressions and Ivy / Counsel replace a lot of ido or helms
+  completion functionality
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'counsel)
+      (package-install 'counsel))
+
+    (unless (package-installed-p 'ivy)
+      (package-install 'ivy))
+    (diminish-minor-mode 'ivy 'ivy-mode)
+    (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
+    (ivy-mode 1)
+    (setq ivy-use-virtual-buffers t
+          ivy-display-style 'fancy)
+
+    (unless (package-installed-p 'swiper)
+      (package-install 'swiper))
+    (global-set-key (kbd "C-s") 'swiper)
+    (global-set-key (kbd "C-r") 'swiper)
+    (global-set-key (kbd "C-c C-r") 'ivy-resume)
+    (global-set-key (kbd "M-x") 'counsel-M-x)
+    (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+    (define-key read-expression-map (kbd "C-r") 'counsel-expression-history)
+  #+END_SRC
+
+* auto-complete
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'auto-complete)
+      (package-install 'auto-complete))
+    (diminish-minor-mode 'auto-complete 'auto-complete-mode)
+    (ac-config-default)
+    (global-auto-complete-mode t)
+  #+END_SRC
+
+* yasnippet
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'yasnippet)
+      (package-install 'yasnippet))
+    (diminish-minor-mode 'yasnippet 'yas-minor-mode)
+    (yas-global-mode 1)
+  #+END_SRC
+
+* themes
+  ZenBurn
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'zenburn-theme)
+      (package-install 'zenburn-theme))
+    ;;(load-theme 'zenburn t)
+  #+END_SRC
+  sublime-themes
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'sublime-themes)
+      (package-install 'sublime-themes))
+    ;;(load-theme 'spolsky t)
+  #+END_SRC
+  solarized-theme
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'solarized-theme)
+      (package-install 'solarized-theme))
+
+    (load-theme 'solarized-dark t)
+  #+END_SRC
+
+* undo-tree
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'undo-tree)
+      (package-install 'undo-tree))
+    (diminish-minor-mode 'undo-tree 'undo-tree-mode)
+    (global-undo-tree-mode)
+  #+END_SRC
+
+* expand-region
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'expand-region)
+      (package-install 'expand-region))
+    (global-set-key (kbd "C-=") 'er/expand-region)
+  #+END_SRC
+
+* projectile
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'projectile)
+      (package-install 'projectile))
+    (diminish-minor-mode 'projectile 'projectile-mode)
+    (setq projectile-enable-caching nil
+          projectile-completion-system 'ivy)
+    (projectile-global-mode)
+    (global-set-key (kbd "C-c f") 'projectile-find-file)
+  #+END_SRC
+
+* magit
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'magit)
+      (package-install 'magit))
+    (global-set-key (kbd "C-x g") 'magit-status)
+  #+END_SRC
+
+* PATH
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'exec-path-from-shell)
+      (package-install 'exec-path-from-shell))
+    (exec-path-from-shell-initialize)
+  #+END_SRC
+
+* terminal (eshell)
+  #+BEGIN_SRC emacs-lisp
+    (add-hook 'term-mode-hook
+              '(lambda ()
+                 (term-set-escape-char ?\C-x)))
+    (defalias 'ff 'find-file)
+    (defalias 'ffo 'find-file-other-window)
+  #+END_SRC
+
+* shell-switcher
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'shell-switcher)
+      (package-install 'shell-switcher))
+    (require 'shell-switcher)
+    (setq shell-switcher-mode t)
+  #+END_SRC
+* clojure
+  #+BEGIN_SRC emacs-lisp
+    (add-to-list 'package-pinned-packages '(cider . "melpa-stable") t)
+    (unless (package-installed-p 'cider)
+      (package-refresh-contents)
+      (package-install 'cider))
+    (setq cider-repl-wrap-history t
+          cider-test-show-report-on-success t
+          cider-repl-history-file "~/.emacs.d/cider-history"
+          cider-cljs-lein-repl "(do
+                                  (use 'figwheel-sidecar.repl-api)
+                                  (start-figwheel!)
+                                  (cljs-repl))")
+    (add-hook 'cider-mode-hook #'eldoc-mode)
+
+    (add-to-list 'package-pinned-packages '(cider-eval-sexp-fu . "melpa-stable") t)
+    (unless (package-installed-p 'cider-eval-sexp-fu)
+      (package-refresh-contents)
+      (package-install 'cider-eval-sexp-fu))
+
+    (add-to-list 'package-pinned-packages '(clj-refactor . "melpa-stable") t)
+    (unless (package-installed-p 'clj-refactor)
+      (package-refresh-contents)
+      (package-install 'clj-refactor))
+    (add-hook 'clojure-mode-hook
+              '(lambda ()
+                 (clj-refactor-mode 1)
+                 (yas-minor-mode 1)
+                 (cljr-add-keybindings-with-prefix "C-c C-m")))
+
+    (require 'clojure-mode)
+    (define-clojure-indent
+      ;; standard stuff
+      (apply 'defun)
+      ;; carmine
+      (wcar 'defun)
+      ;; test.check
+      (for-all 'defun)
+      ;; midje
+      (fact 'defun)
+      ;; core.match
+      (match 'defun)
+      ;; om.next
+      (render 'defun)
+      (query 'defun)
+      (params 'defun)
+      (ident 'defun)
+      (add-root! 'defun)
+      (transact! 'defun)
+      ;; om.dom
+      (div 'defun)
+      (li 'defun))
+
+    (diminish-major-mode 'clojure-mode-hook "clj")
+
+    (add-to-list 'auto-mode-alist '("\\.edn\\.tmpl$" . clojure-mode))
+  #+END_SRC
+
+* paredit
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'paredit)
+      (package-install 'paredit))
+
+    (diminish-minor-mode 'paredit 'paredit-mode " π")
+
+    (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
+    (add-hook 'lisp-mode-hook #'enable-paredit-mode)
+    (add-hook 'clojure-mode-hook #'enable-paredit-mode)
+    (add-hook 'cider-repl-mode-hook #'enable-paredit-mode)
+    (add-hook 'ielm-mode-hook #'enable-paredit-mode)
+    (add-hook 'slime-repl-mode-hook #'enable-paredit-mode)
+    (add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode)
+    (add-hook 'scheme-mode-hook #'enable-paredit-mode)
+  #+END_SRC
+
+* java
+  #+BEGIN_SRC emacs-lisp
+    (add-hook 'java-mode-hook
+              (lambda ()
+                (setq c-basic-offset 2
+                      tab-width 2
+                      indent-tab-mode nil)))
+  #+END_SRC
+
+* scala-mode
+  [[http://ensime.github.io/editors/emacs/scala-mode/]]
+
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'scala-mode)
+      (package-install 'scala-mode))
+
+    (add-to-list 'interpreter-mode-alist '("scala" . scala-mode))
+  #+END_SRC
+
+* web-mode
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'web-mode)
+      (package-install 'web-mode))
+
+    (add-to-list 'auto-mode-alist '("\\.html\\.erb$" . web-mode))
+    (add-to-list 'auto-mode-alist '("\\.vm$" . web-mode))
+    (add-to-list 'auto-mode-alist '("\\.html$" . web-mode))
+    (add-to-list 'auto-mode-alist '("\\.jsx$" . web-mode))
+
+    (add-hook 'web-mode-hook
+              '(lambda ()
+                 (setq web-mode-markup-indent-offset 2
+                       web-mode-css-indent-offset 2
+                       web-mode-code-indent-offset 2)))
+  #+END_SRC
+
+* css
+  #+BEGIN_SRC emacs-lisp
+    (setq css-indent-offset 2)
+  #+END_SRC
+* ruby
+  #+BEGIN_SRC emacs-lisp
+    (add-to-list 'auto-mode-alist '("\\.chuckhooks$" . ruby-mode))
+  #+END_SRC
+* gist.el
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'gist)
+      (package-install 'gist))
+  #+END_SRC
+
+* markdown
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'markdown-mode)
+      (package-install 'markdown-mode))
+    (setq markdown-command "multimarkdown")
+    (add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
+  #+END_SRC
+
+* hungry-delete
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'hungry-delete)
+      (package-install 'hungry-delete))
+    (require 'hungry-delete)
+    (global-hungry-delete-mode)
+    (diminish-minor-mode 'hungry-delete 'hungry-delete-mode)
+  #+END_SRC
+
+* dockerfile
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'dockerfile-mode)
+      (package-install 'dockerfile-mode))
+  #+END_SRC
+
+* yaml-mode
+  #+BEGIN_SRC emacs-lisp
+    (unless (package-installed-p 'yaml-mode)
+      (package-install 'yaml-mode))
+  #+END_SRC
+
+* kibit
+  #+BEGIN_SRC emacs-lisp
+    (add-to-list 'package-pinned-packages '(kibit-helper . "melpa-stable") t)
+    (unless (package-installed-p 'kibit-helper)
+      (package-install 'kibit-helper))
+  #+END_SRC
+
+* javascript
+  #+BEGIN_SRC emacs-lisp
+    (setq js-indent-level 2)
+  #+END_SRC
+
+* emacs-emojify
+  #+BEGIN_SRC emacs-lisp
+    ;; (unless (package-installed-p 'emojify)
+    ;;   (package-install 'emojify))
+    ;; (add-hook 'after-init-hook #'global-emojify-mode)
+  #+END_SRC
+
+* Sayid
+  http://bpiel.github.io/sayid/
+  #+BEGIN_SRC emacs-lisp
+    (add-to-list 'package-archives
+                 '("billpiel" . "http://billpiel.com/emacs-packages/") t)
+
+    (unless (package-installed-p 'sayid)
+      (package-refresh-contents)
+      (package-install 'sayid))
+  #+END_SRC
+* hide some more modes
+  #+BEGIN_SRC emacs-lisp
+    (diminish-minor-mode 'autorevert 'auto-revert-mode)
+    (diminish-minor-mode 'eldoc 'eldoc-mode)
+    (diminish-major-mode 'lisp-interaction-mode-hook "λ")
+  #+END_SRC
+
+* Modeline customization
+  #+BEGIN_SRC emacs-lisp
+    ;; (defvar stask-projectile-mode-line
+    ;;   '(:propertize
+    ;;     (:eval (when (ignore-errors (projectile-project-root))
+    ;;              (concat " " (projectile-project-name))))
+    ;;     face font-lock-constant-face)
+    ;;   "Modeline format for Projectile.")
+    ;; (put 'stask-projectile-mode-line 'risky-local-variable t)
+
+    ;; (defvar stask-vc-mode-line
+    ;;   '(" " (:propertize
+    ;;          ;; Strip the backend name from the VC status information
+    ;;          (:eval (let ((backend (symbol-name (vc-backend (buffer-file-name)))))
+    ;;                   (substring vc-mode (+ (length backend) 2))))
+    ;;          face font-lock-variable-name-face))
+    ;;   "Modeline format for VC mode.")
+    ;; (put 'stask-vc-mode-line 'risky-local-variable t)
+
+    ;; (setq-default mode-line-format
+    ;;               '("%e" mode-line-front-space
+    ;;                 ;; Standard info about the current buffer
+    ;;                 mode-line-mule-info
+    ;;                 mode-line-client
+    ;;                 mode-line-modified
+    ;;                 mode-line-remote
+    ;;                 mode-line-frame-identification
+    ;;                 mode-line-buffer-identification " " mode-line-position
+    ;;                 ;; Some specific information about the current buffer
+    ;;                 stask-projectile-mode-line ; project information
+    ;;                 (vc-mode stask-vc-mode-line) ;; VC information
+    ;;                 ;; Misc information, notably battery state and function name
+    ;;                 " "
+    ;;                 mode-line-misc-info
+    ;;                 ;; And the modes, which i don't really care for anyway
+    ;;                 " " mode-line-modes mode-line-end-spaces))
+
+    (unless (package-installed-p 'smart-mode-line)
+      (package-install 'smart-mode-line))
+    (unless (package-installed-p 'smart-mode-line-powerline-theme)
+      (package-install 'smart-mode-line-powerline-theme))
+
+    (require 'powerline)
+    (require 'smart-mode-line)
+    (sml/setup)
+  #+END_SRC
+* random functions
+  #+BEGIN_SRC emacs-lisp
+    (defun un-camelcase-string (s &optional sep start)
+      "Convert CamelCase string S to lower case with word separator SEP.
+        Default for SEP is a hyphen \"-\".
+        If third argument START is non-nil, convert words after that index in S."
+      (let ((case-fold-search nil))
+        (while (string-match "[A-Z]" s (or start 1))
+          (setq s (replace-match (concat (or sep "-")
+                                         (downcase (match-string 0 s)))
+                                 t nil s)))
+        (downcase s)))
+  #+END_SRC

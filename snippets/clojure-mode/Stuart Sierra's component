@@ -1,0 +1,26 @@
+# -*- mode: snippet -*-
+# name: Stuart Sierra's component
+# key: defcomp
+# --
+;; ===========================================================================
+;; API
+
+;; ===========================================================================
+;; component
+
+(defrecord ${1:component} [$2]
+  component/Lifecycle
+  (start [component]
+    (log/info ";; starting $1")
+    component)
+  (stop [component]
+    (log/info ";; stopping $1")
+    component))
+
+;; ===========================================================================
+;; constructor
+
+(defn new-${1:$(un-camelcase-string yas-text)} [config]
+  (component/using
+    (map->$1 (select-keys config [$0]))
+    []))
