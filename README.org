@@ -6,6 +6,8 @@
 
 ** configuration
 
+   Rename your old `~/.emacs.d` and `~/.emacs` if they exist.
+
    Fork this repo and then clone it to your `~/.emacs.d`:
    #+BEGIN_SRC screen
      cd ~/
