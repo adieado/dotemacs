@@ -1,0 +1,28 @@
+# Emacs configuration
+
+## installing emacs
+
+I use [[https://github.com/railwaycat/homebrew-emacsmacport][Emacs Mac Port]]. Install it using homebrew as described in the readme. Don't forget to run `brew update` before installing it.
+
+## configuration
+
+Fork this repo and then clone it to your `~/.emacs.d`
+
+You might want to add a `secret.org` file to your `~/.emacs.d` folder after you clone the repo to configure personal settings. It's going to be ignored by git.
+The file will be evaluated during startup if it exists.
+
+Example of the file:
+
+#+BEGIN_SRC org
+  ,#+TITLE: configuration excluded from github
+  ,#+STARTUP: overview
+
+  ,* personal information
+    ,#+BEGIN_SRC emacs-lisp
+      (setq user-full-name "Your Name"
+            user-email-address "your@email"
+            calendar-latitude 32.0808800
+            calendar-longitude 34.7805700
+            calendar-location-name "Tel Aviv, Israel")
+    ,#+END_SRC
+#+END_SRC
