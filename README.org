@@ -1,28 +1,41 @@
-# Emacs configuration
+* Emacs configuration
+** installing emacs
 
-## installing emacs
+   I use [[https://github.com/railwaycat/homebrew-emacsmacport][Emacs Mac Port]]. Install it using homebrew as described in the [[https://github.com/railwaycat/homebrew-emacsmacport#homebrew][readme]].
+   Don't forget to run `brew update` before installing it.
 
-I use [[https://github.com/railwaycat/homebrew-emacsmacport][Emacs Mac Port]]. Install it using homebrew as described in the readme. Don't forget to run `brew update` before installing it.
+** configuration
 
-## configuration
+   Fork this repo and then clone it to your `~/.emacs.d`:
+   #+BEGIN_SRC screen
+     cd ~/
+     git clone <your-git-repo> ./emacs.d
+   #+END_SRC
 
-Fork this repo and then clone it to your `~/.emacs.d`
+   You might want to add a `secret.org` file to your `~/.emacs.d` folder after you clone the repo to configure personal settings. It's going to be ignored by git.
+   The file will be evaluated during startup if it exists.
 
-You might want to add a `secret.org` file to your `~/.emacs.d` folder after you clone the repo to configure personal settings. It's going to be ignored by git.
-The file will be evaluated during startup if it exists.
+   Example of the file:
 
-Example of the file:
+   #+BEGIN_SRC org
+     ,#+TITLE: configuration excluded from github
+     ,#+STARTUP: overview
 
-#+BEGIN_SRC org
-  ,#+TITLE: configuration excluded from github
-  ,#+STARTUP: overview
+     ,* personal information
+       ,#+BEGIN_SRC emacs-lisp
+         (setq user-full-name "Your Name"
+               user-email-address "your@email"
+               calendar-latitude 32.0808800
+               calendar-longitude 34.7805700
+               calendar-location-name "Tel Aviv, Israel")
+       ,#+END_SRC
+   #+END_SRC
 
-  ,* personal information
-    ,#+BEGIN_SRC emacs-lisp
-      (setq user-full-name "Your Name"
-            user-email-address "your@email"
-            calendar-latitude 32.0808800
-            calendar-longitude 34.7805700
-            calendar-location-name "Tel Aviv, Israel")
-    ,#+END_SRC
-#+END_SRC
+   When you run emacs for the first time after cloning the configuration, it's going to take few minutes to install all the packages. Be patient.
+
+** ongoing maintenance
+
+   Important packages like cider and clj-refactor are installed from ~melpa-stable~ repo because i'm not brave enough to use unstable versions for stuff i really need to work every day.
+   If you have another package you want to ~pin~, see how cider is installed. Running ~package-refresh-contents~ before ~package-install~ is really important.
+
+   Update your packages using ~package-list-packages~ interactive command when you feel like it, or when you find a bug.

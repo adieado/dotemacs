@@ -426,6 +426,7 @@
   #+BEGIN_SRC emacs-lisp
     (add-to-list 'package-pinned-packages '(kibit-helper . "melpa-stable") t)
     (unless (package-installed-p 'kibit-helper)
+      (package-refresh-contents)
       (package-install 'kibit-helper))
   #+END_SRC
 
